@@ -4,7 +4,7 @@ import { Table, TableSchema } from './tables.schema';
 import { TableService } from './tables.service';
 import { TableController } from './tables.controller';
 import { TableLayout, TableLayoutSchema } from './tableLayout.schema';
-import { Orders, OrdersSchema } from '../orders/Orders.schema';
+import { Orders, OrdersSchema } from '../orders/orders.schema';
 
 
 @Module({
