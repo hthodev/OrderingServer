@@ -7,6 +7,7 @@ import {
   Query,
   Put,
   Delete,
+  HttpCode,
 } from '@nestjs/common';
 import { FoodService } from './Food.service';
 
@@ -14,6 +15,13 @@ import { FoodService } from './Food.service';
 export class FoodController {
   constructor(private readonly foodService: FoodService) {}
 
+  @Post('create')
+  async create(@Body() { price, image, name, unit, describe, category }) {
+    return await this.foodService.addFood({ price, image, name, unit, describe, category });
+  }
+
+
+  @HttpCode(200)
   @Post('foodList')
   async foodList(@Body() { search, filter }) {
     return await this.foodService.foodList(search, filter);

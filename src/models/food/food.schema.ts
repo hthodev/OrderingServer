@@ -22,6 +22,12 @@ export class Food {
 
   @Prop()
   quantity?: number;
+
+  @Prop({ required: true })
+  category: string;
+
+  @Prop({ default: true })
+  isSell?: boolean;
 }
 
 export const FoodSchema = SchemaFactory.createForClass(Food);

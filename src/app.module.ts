@@ -11,6 +11,7 @@ import { OrdersController } from './models/orders/orders.controller';
 import { TableController } from './models/tables/tables.controller';
 import { UserController } from './models/users/users.controller';
 import { JwtMiddleware } from './commons/middlewares/jwt.middleware';
+import { SocketGateway } from './websockets/socket.gateway'
 
 @Module({
   imports: [
@@ -27,7 +28,7 @@ import { JwtMiddleware } from './commons/middlewares/jwt.middleware';
     TableController,
     UserController,
   ],
-  providers: [AppService],
+  providers: [AppService, SocketGateway],
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {

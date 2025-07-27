@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, HttpCode } from '@nestjs/common';
 import { UserService } from './users.service';
 import { USERS } from 'src/constants/model';
 
@@ -6,9 +6,16 @@ import { USERS } from 'src/constants/model';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @HttpCode(200)
   @Post('login')
   async login(@Body() { username, password }) {
     return await this.userService.login({ username, password });
+  }
+
+  @HttpCode(200)
+  @Post('refresh')
+  async refresh(@Body() { refresh }) {
+    return await this.userService.refreshToken(refresh);
   }
 
   @Post('create')
@@ -26,6 +33,7 @@ export class UserController {
     });
   }
 
+  @HttpCode(200)
   @Post('inActive')
   async inActive(@Param('_id') _id: string) {
     return await this.userService.inActive({ _id });

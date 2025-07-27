@@ -4,6 +4,7 @@ import { Orders, OrdersSchema } from './Orders.schema';
 import { OrdersService } from './Orders.service';
 import { OrdersController } from './Orders.controller';
 import { Table, TableSchema } from '../tables/tables.schema';
+import { SocketGateway } from 'src/websockets/socket.gateway';
 
 
 @Module({
@@ -13,7 +14,7 @@ import { Table, TableSchema } from '../tables/tables.schema';
       { name: Table.name, schema: TableSchema },
     ]),
   ],
-  providers: [OrdersService],
+  providers: [OrdersService, SocketGateway],
   controllers: [OrdersController],
   exports: [OrdersService],
 })

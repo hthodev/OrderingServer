@@ -15,35 +15,42 @@ export class FoodService {
   ) {
     const { unit = '', minPrice = 0, maxPrice = Infinity } = filter;
 
-    return await this.foodModel
+    return (await this.foodModel
       .find({
-        $or: [
-          { name: { $regex: search, $options: 'i' } },
-          { unit: { $regex: unit, $options: 'i' } },
-          { price: { $gte: minPrice, $lte: maxPrice } },
-        ],
+        name: { $regex: search, $options: 'i' },
+        unit: { $regex: unit, $options: 'i' },
+        price: { $gte: minPrice, $lte: maxPrice },
       })
-      .lean();
+      ).map((item) => item.toJSON());;
   }
 
-  async addFood({ price, image, name, unit, describe }) {
+  async addFood({ price, image, name, unit, describe, category }) {
     const food = await this.foodModel.findOne({ name }).lean();
 
     if (food) {
       throw new HttpException('Food existed!', 400);
     }
-    return await this.foodModel.create({
+    await this.foodModel.create({
       price,
       image,
       name,
       unit,
-      describe
+      describe,
+      category,
     });
+
+    return { success: true }
   }
 
   async updateFood(
     _id: string,
-    data: { price?: number; image?: string; name?: string; unit?: string, describe?: string },
+    data: {
+      price?: number;
+      image?: string;
+      name?: string;
+      unit?: string;
+      describe?: string;
+    },
   ) {
     const food = await this.foodModel.findOne({ _id }).lean();
 

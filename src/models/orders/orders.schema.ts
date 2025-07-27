@@ -15,6 +15,7 @@ export class Orders {
         name: string;
         unit: string;
         quantity: number;
+        category: string;
         user: {
             name: string;
             orderedAt: Date;

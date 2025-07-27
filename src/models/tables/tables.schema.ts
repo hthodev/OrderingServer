@@ -9,10 +9,10 @@ export class Table {
   name: string;
   
   @Prop()
-  type: "Office" | "Add"
+  type: "OFFICIAL" | "EXTENDED"
 
   @Prop({ default: false })
   havingGuests: boolean
 }
-
+ 
 export const TableSchema = SchemaFactory.createForClass(Table);
