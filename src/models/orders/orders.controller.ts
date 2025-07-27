@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Req } from '@nestjs/common';
-import { OrdersService } from './Orders.service';
+import { OrdersService } from './orders.service';
 import { User } from 'src/commons/decorators/user.decorator';
 
 @Controller('orders')

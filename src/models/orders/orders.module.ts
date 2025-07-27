@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Orders, OrdersSchema } from './Orders.schema';
-import { OrdersService } from './Orders.service';
-import { OrdersController } from './Orders.controller';
+import { OrdersService } from './orders.service';
+import { OrdersController } from './orders.controller';
 import { Table, TableSchema } from '../tables/tables.schema';
 import { SocketGateway } from 'src/websockets/socket.gateway';
 

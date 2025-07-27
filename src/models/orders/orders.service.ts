@@ -1,6 +1,6 @@
 import { InjectModel } from '@nestjs/mongoose';
 import { ClientSession, Model, Types } from 'mongoose';
-import { Orders, OrdersDocument } from './Orders.schema';
+import { Orders, OrdersDocument } from './orders.schema';
 import { HttpException, Injectable } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';

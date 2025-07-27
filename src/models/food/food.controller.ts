@@ -9,7 +9,7 @@ import {
   Delete,
   HttpCode,
 } from '@nestjs/common';
-import { FoodService } from './Food.service';
+import { FoodService } from './food.service';
 
 @Controller('food')
 export class FoodController {
