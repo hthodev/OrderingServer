@@ -1,8 +1,8 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Food, FoodSchema } from './Food.schema';
-import { FoodService } from './Food.service';
-import { FoodController } from './Food.controller';
+import { Food, FoodSchema } from './food.schema';
+import { FoodService } from './food.service';
+import { FoodController } from './food.controller';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 

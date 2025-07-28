@@ -3,7 +3,7 @@ import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, Model } from 'mongoose';
 import { Table, TableDocument } from './tables.schema';
 import { TableLayout, TableLayoutDocument } from './tableLayout.schema';
-import { Orders, OrdersDocument } from '../orders/Orders.schema';
+import { Orders, OrdersDocument } from '../orders/orders.schema';
 
 @Injectable()
 export class TableService {
