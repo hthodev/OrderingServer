@@ -32,4 +32,10 @@ export class TableController {
   async layoutTable(@Body() { types }: { types: string[]}) {
     return await this.tableService.tableLayout(types)
   }
+
+  @HttpCode(200)
+  @Get('tableWithFoodOrderForKitchen')
+    async tableWithFoodOrderForKitchen() {
+    return await this.tableService.tableWithFoodOrderForKitchen()
+  }
 }

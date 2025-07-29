@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { FoodCategory } from 'src/constants/foods';
 
 export type OrdersDocument = Orders & Document;
 
@@ -15,11 +16,12 @@ export class Orders {
         name: string;
         unit: string;
         quantity: number;
-        category: string;
+        category: FoodCategory;
         user: {
             name: string;
             orderedAt: Date;
-        }[]
+        }[],
+        isCooked: boolean;
     }[]
 
     @Prop({ required: true })

@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { FoodCategory } from 'src/constants/foods';
 
 export type FoodDocument = Food & Document;
 
@@ -20,11 +21,11 @@ export class Food {
   @Prop()
   describe?: string;
 
-  @Prop()
+  @Prop({ required: true })
   quantity?: number;
 
   @Prop({ required: true })
-  category: string;
+  category: FoodCategory;
 
   @Prop({ default: true })
   isSell?: boolean;

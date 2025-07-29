@@ -6,6 +6,8 @@ import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { Table, TableDocument } from '../tables/tables.schema';
 import { SocketGateway } from 'src/websockets/socket.gateway';
+import FOOD from 'src/constants/foods';
+import { exceptionCategory } from 'src/commons/shares';
 
 @Injectable()
 export class OrdersService {
@@ -27,12 +29,21 @@ export class OrdersService {
     session.startTransaction();
 
     try {
-      const order = await this.ordersModel.create(
+      const table = await this.tableModel.findOne({ _id: table_id }).lean();
+      const orders = await this.ordersModel.create(
         [
           {
             table: new Types.ObjectId(table_id),
             foods: foods.map((food) => ({
               ...food,
+              ...(![
+                FOOD.CATEGORY.BIA,
+                FOOD.CATEGORY.NUOC,
+                FOOD.CATEGORY.BANH_TRANG,
+                FOOD.CATEGORY.THUC_PHAM_THEM,
+              ].includes(food.category)
+                ? { isCooked: false }
+                : {}),
               user: [{ name: user.fullName, orderedAt: new Date() }],
             })),
             orderer: new Types.ObjectId(user._id),
@@ -51,7 +62,21 @@ export class OrdersService {
 
       //area socket
       this.socketGateway.notifyTableUpdate();
-      return order.map((o) => o.toJSON())[0];
+
+      const foodsForCooking = orders[0].foods.filter(
+        (food) =>
+          ![
+            FOOD.CATEGORY.BIA,
+            FOOD.CATEGORY.NUOC,
+            FOOD.CATEGORY.BANH_TRANG,
+            FOOD.CATEGORY.THUC_PHAM_THEM,
+          ].includes(food.category as any),
+      );
+      if (foodsForCooking?.length) {
+        this.socketGateway.newOrder({ foods: foodsForCooking, table })
+      }
+
+      return orders.map((o) => o.toJSON())[0];
     } catch (error) {
       await session.abortTransaction();
       return { success: false, error: error.message };
@@ -242,5 +267,43 @@ export class OrdersService {
         ),
     );
     return justPushIsFoods;
+  }
+
+  async updateCookedFood(food_id, order_id) {
+    const session = await this.connection.startSession();
+    session.startTransaction();
+
+    try {
+      const order = await this.ordersModel.findOne({ _id: order_id }).lean();
+      if (!order) throw new HttpException('Không tìm thấy order này', 400);
+      const foods = order.foods.map((food) => {
+        if (food._id === food_id) {
+          food.isCooked = true;
+        }
+        return food;
+      });
+      await this.ordersModel.updateOne(
+        { _id: order_id },
+        { $set: { foods } },
+        { session, timestamps: false },
+      );
+
+      if (
+        order.foods.every((f) => exceptionCategory(f.category) || f.isCooked)
+      ) {
+        await this.ordersModel.updateOne(
+          { _id: order_id },
+          { $set: { updatedAt: (order as any).createdAt } },
+          { session, timestamps: false },
+        );
+      }
+
+      await session.commitTransaction();
+
+      return { success: true };
+    } catch (error) {
+      await session.abortTransaction();
+      return { success: false, message: error.message };
+    }
   }
 }

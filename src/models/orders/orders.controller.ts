@@ -35,4 +35,10 @@ export class OrdersController {
   async customerPaid(@Param('_id') _id) {
     return await this.ordersService.customerPaid(_id)
   }
+
+  @HttpCode(200)
+  @Put('cooked/orders/:order_id/foods/:food_id')
+  async updateCookedFood(@Param() { order_id, food_id }) {
+    return await this.ordersService.updateCookedFood(food_id, order_id)
+  }
 }

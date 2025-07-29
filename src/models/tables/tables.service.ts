@@ -4,6 +4,7 @@ import { Connection, Model } from 'mongoose';
 import { Table, TableDocument } from './tables.schema';
 import { TableLayout, TableLayoutDocument } from './tableLayout.schema';
 import { Orders, OrdersDocument } from '../orders/orders.schema';
+import FOOD, { FoodCategory } from 'src/constants/foods';
 
 @Injectable()
 export class TableService {
@@ -122,5 +123,55 @@ export class TableService {
       { $set: { havingGuests: isGuest } },
       { session },
     );
+  }
+
+  async tableWithFoodOrderForKitchen() {
+    const tables = await this.tableModel.find().lean();
+    const activeTableIds = tables
+      .filter((t) => t.havingGuests)
+      .map((a) => a._id);
+
+    const orders = (
+      await this.orderModel.aggregate([
+        { $match: { table: { $in: activeTableIds } } },
+        { $sort: { updatedAt: -1 } },
+        {
+          $group: {
+            _id: '$table',
+            latestOrder: { $first: '$$ROOT' },
+          },
+        },
+      ])
+    ).map((order) => {
+      const foods = order?.latestOrder?.foods;
+      if (!foods?.length) return;
+      const foodsForCooking = foods.filter(
+        (food) =>
+          ![
+            FOOD.CATEGORY.BIA,
+            FOOD.CATEGORY.NUOC,
+            FOOD.CATEGORY.BANH_TRANG,
+            FOOD.CATEGORY.THUC_PHAM_THEM,
+          ].includes(food.category),
+      );
+      order.latestOrder.foods = foodsForCooking;
+      return order;
+    });
+
+    const orderMap = new Map(
+      orders.map((o) => [o._id.toString(), o.latestOrder]),
+    );
+
+    return tables
+      .map((t) => ({
+        ...t,
+        order: orderMap.get(t._id.toString()) || null,
+      }))
+      .filter((t) => t.order && t?.order?.foods?.length)
+      .sort(
+        (a, b) =>
+          new Date(b.order.updatedAt).getTime() -
+          new Date(a.order.updatedAt).getTime(),
+      );
   }
 }
