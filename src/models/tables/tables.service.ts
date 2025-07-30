@@ -97,22 +97,14 @@ export class TableService {
   }
 
   async createTable({ name, type }) {
-    const session = await this.connection.startSession();
-    session.startTransaction();
-
     try {
-      await this.tableModel.create(
-        {
-          name,
-          type,
-        },
-        { session },
-      );
-      await session.commitTransaction();
+      await this.tableModel.create({
+        name,
+        type,
+      });
 
       return { success: true };
     } catch (error) {
-      await session.abortTransaction();
       return { success: false, message: error.message };
     }
   }
