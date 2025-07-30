@@ -30,6 +30,7 @@ export class FoodModule implements OnModuleInit {
         name: 'Bánh Tráng',
         price: 15000,
         unit: 'cái',
+        category: "Bánh tráng"
       });
     }
   }
