@@ -21,7 +21,7 @@ export class Food {
   @Prop()
   describe?: string;
 
-  @Prop({ required: true })
+  @Prop()
   quantity?: number;
 
   @Prop({ required: true })
