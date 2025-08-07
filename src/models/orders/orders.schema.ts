@@ -22,6 +22,7 @@ export class Orders {
             orderedAt: Date;
         }[],
         isCooked: boolean;
+        total?: number;
     }[]
 
     @Prop({ required: true })

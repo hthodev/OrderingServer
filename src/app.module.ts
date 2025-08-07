@@ -12,6 +12,8 @@ import { TableController } from './models/tables/tables.controller';
 import { UserController } from './models/users/users.controller';
 import { JwtMiddleware } from './commons/middlewares/jwt.middleware';
 import { SocketGateway } from './websockets/socket.gateway'
+import { ManagerModule } from './models/manager/manager.module';
+import { ManagerController } from './models/manager/manager.controller';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { SocketGateway } from './websockets/socket.gateway'
     OrdersModule,
     TableModule,
     UserModule,
+    ManagerModule,
   ],
   controllers: [
     AppController,
@@ -27,6 +30,7 @@ import { SocketGateway } from './websockets/socket.gateway'
     OrdersController,
     TableController,
     UserController,
+    ManagerController,
   ],
   providers: [AppService, SocketGateway],
 })

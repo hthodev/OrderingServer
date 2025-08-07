@@ -27,12 +27,14 @@ export class FoodController {
     return await this.foodService.foodList(search, filter);
   }
 
-  @Put('updateFood')
+  @HttpCode(200)
+  @Put('updateFood/:_id')
   async updateFood(@Body() body, @Param('_id') _id) {
     return await this.foodService.updateFood(_id, body);
   }
 
-  @Delete('deleteFood')
+  @HttpCode(200)
+  @Delete('deleteFood/:_id')
   async deleteFood(@Param('_id') _id) {
     return await this.foodService.deleteFood(_id);
   }

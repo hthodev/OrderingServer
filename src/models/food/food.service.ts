@@ -65,12 +65,14 @@ export class FoodService {
       }
     }
 
-    return await this.foodModel.updateOne(
+    await this.foodModel.updateOne(
       { _id },
       {
         $set: updateFields,
       },
     );
+
+    return { success: true }
   }
 
   async deleteFood(_id: string) {
@@ -79,6 +81,7 @@ export class FoodService {
     if (!food) {
       throw new HttpException('Food not existed!', 400);
     }
-    return await this.foodModel.deleteOne({ _id });
+    await this.foodModel.deleteOne({ _id });
+    return { success: true }
   }
 }
