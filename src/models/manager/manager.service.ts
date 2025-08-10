@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Orders, OrdersDocument } from '../orders/orders.schema';
 import * as moment from 'moment';
+import 'moment-timezone';
 import FOOD from 'src/constants/foods';
 
 @Injectable()
@@ -12,8 +13,8 @@ export class ManagerService {
     private readonly orderModel: Model<OrdersDocument>,
   ) {}
 
-  async getChartData(range: 'week' | 'month' | 'year') {
-    const now = moment();
+  async getChartData(date: string, range: 'week' | 'month' | 'year') {
+    const now = moment(date);
     let startDate: Date;
     let endDate: Date;
     let labels: string[] = [];
@@ -62,6 +63,7 @@ export class ManagerService {
           $gte: startDate,
           $lte: endDate,
         },
+        isPayment: true
       })
       .lean();
 
@@ -90,8 +92,8 @@ export class ManagerService {
     };
   }
 
-  async topFoods(range: 'week' | 'month' | 'year') {
-    const now = moment();
+  async topFoods(date, range: 'week' | 'month' | 'year') {
+    const now = moment(date);
     let startDate: Date;
     let endDate: Date;
 
@@ -132,7 +134,7 @@ export class ManagerService {
             if (!orderedAt.isBetween(startDate, endDate, undefined, '[]'))
               continue;
 
-            beerCount[food.name] = (beerCount[food.name] || 0) + 1;
+            beerCount[food.name] = (beerCount[food.name] || 0) + food.quantity;
           }
           continue;
         }
@@ -144,7 +146,7 @@ export class ManagerService {
           if (!orderedAt.isBetween(startDate, endDate, undefined, '[]'))
             continue;
 
-          foodCount[food.name] = (foodCount[food.name] || 0) + 1;
+          foodCount[food.name] = (foodCount[food.name] || 0) + food.quantity;
         }
       }
     }
@@ -165,4 +167,24 @@ export class ManagerService {
       topBeers,
     };
   }
+async invoiceListByDate(dateRaw: string | Date) {
+  const TZ = "Asia/Ho_Chi_Minh";
+  const start = moment.tz(dateRaw, TZ).startOf("day").toDate();
+  const nextDayStart = moment.tz(dateRaw, TZ).add(1, "day").startOf("day").toDate();
+
+  const orders = await this.orderModel
+    .find({
+      createdAt: {
+        $gte: start,
+        $lt: nextDayStart,
+      },
+      isPayment: true,
+    })
+    .select("_id isPayment createdAt updatedAt paymentTime total")
+    .lean()
+    .populate("table", "_id name")
+    .populate("orderer", "_id fullName username")
+    .populate("cashier", "_id fullName username");
+  return orders;
+}
 }

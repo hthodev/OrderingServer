@@ -7,8 +7,8 @@ dotenv.config()
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalInterceptors(new DateTimeInterceptor());
-   app.useGlobalInterceptors(new SanitizeIdInterceptor());
+  // app.useGlobalInterceptors(new DateTimeInterceptor());
+  app.useGlobalInterceptors(new SanitizeIdInterceptor());
   app.setGlobalPrefix('/api');
   app.enableCors({
     origin: '*',

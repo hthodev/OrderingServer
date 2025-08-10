@@ -22,6 +22,10 @@ export class TableService {
     private readonly connection: Connection,
   ) {}
 
+  async tablesName() {
+    return await this.tableModel.find().lean().select('_id name');
+  }
+
   async tableList() {
     const tables = await this.tableModel.find().lean();
     const activeTableIds = tables

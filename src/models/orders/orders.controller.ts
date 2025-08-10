@@ -32,8 +32,8 @@ export class OrdersController {
 
   @HttpCode(200)
   @Put('paid/:_id')
-  async customerPaid(@Param('_id') _id) {
-    return await this.ordersService.customerPaid(_id)
+  async customerPaid(@Param('_id') _id, @User() user) {
+    return await this.ordersService.customerPaid(_id, user)
   }
 
   @HttpCode(200)

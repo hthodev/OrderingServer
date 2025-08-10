@@ -16,13 +16,19 @@ export class ManagerController {
   constructor(private readonly managerService: ManagerService) {}
 
   @Get("orders/ordersByTimeRange")
-  async ordersByTimeRange(@Query() { type }) {
-    return await this.managerService.getChartData(type);
+  async ordersByTimeRange(@Query() { type, date }) {
+    return await this.managerService.getChartData(date, type);
   }
 
   
   @Get("foods/topFoods")
-  async topFoods(@Query() { type }) {
-    return await this.managerService.topFoods(type);
+  async topFoods(@Query() { date, type }) {
+    return await this.managerService.topFoods(date, type);
+  }
+
+    
+  @Get("orders/invoicesByDate")
+  async invoiceListByDate(@Query() { date }) {
+    return await this.managerService.invoiceListByDate(date);
   }
 }

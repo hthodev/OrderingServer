@@ -195,7 +195,6 @@ export class OrdersService {
       let quantity = food.quantity;
 
       if (returnItem) {
-        // 🛑 Bug 1: Trả nhiều hơn số lượng thực tế
         if (returnItem.returnQuantity > quantity) {
           throw new HttpException(
             `Món ăn "${food.name}" có số lượng trả (${returnItem.returnQuantity}) nhiều hơn số lượng đã order (${quantity})`,
@@ -205,7 +204,6 @@ export class OrdersService {
         quantity -= returnItem.returnQuantity;
       }
 
-      // ✅ Bug 2: Bỏ món quantity = 0 ra khỏi DB & invoice
       if (quantity > 0) {
         bills.push({
           ...food,
@@ -215,7 +213,6 @@ export class OrdersService {
       }
     }
 
-    // Cập nhật lại DB
     await this.ordersModel.updateOne({ _id }, { $set: { foods: bills } });
 
     const totalBill = bills.reduce((prev, curr) => prev + curr.total, 0);
@@ -226,21 +223,21 @@ export class OrdersService {
     };
   }
 
-  async customerPaid(_id) {
+  async customerPaid(_id, user) {
     const session: ClientSession = await this.ordersModel.db.startSession();
     session.startTransaction();
 
     try {
       const order = await this.ordersModel
         .findOne({ _id })
-        .select('_id table')
+        .select('_id table foods')
         .session(session)
         .lean();
-
+      const total = order.foods.reduce((acc, cur) => acc + (cur.total || 0), 0)
       if (!order) throw new HttpException('Order not existed!', 400);
       await this.ordersModel.updateOne(
         { _id },
-        { $set: { isPayment: true, paymentTime: new Date() } },
+        { $set: { isPayment: true, paymentTime: new Date(), total, cashier: user._id } },
         { session },
       );
 
