@@ -220,6 +220,7 @@ export class OrdersService {
     return {
       bills,
       totalBill,
+      paymentTime: order.paymentTime || null,
     };
   }
 

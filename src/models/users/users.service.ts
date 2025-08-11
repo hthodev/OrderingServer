@@ -2,7 +2,12 @@ import { HttpException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './users.schema';
-import { comparePassword, hashPassword, signToken, verifyRefreshToken } from 'src/helpers';
+import {
+  comparePassword,
+  hashPassword,
+  signToken,
+  verifyRefreshToken,
+} from 'src/helpers';
 import { USERS } from 'src/constants/model';
 
 @Injectable()
@@ -19,9 +24,7 @@ export class UserService {
   }
 
   async login({ username, password }) {
-    const user = await this.findUser(
-      { username }
-    );
+    const user = await this.findUser({ username });
 
     if (!user || !user.isActive) {
       throw new HttpException('The account not found!', 400);
@@ -34,10 +37,10 @@ export class UserService {
   }
 
   async refreshToken(token) {
-    const _id = verifyRefreshToken(token)
+    const _id = verifyRefreshToken(token);
     if (!_id) throw new HttpException('Invalid token', 400);
-    const user = await this.findUser({ _id })
-    return signToken(user)
+    const user = await this.findUser({ _id });
+    return signToken(user);
   }
 
   async create({

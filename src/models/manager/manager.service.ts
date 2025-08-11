@@ -5,12 +5,15 @@ import { Orders, OrdersDocument } from '../orders/orders.schema';
 import * as moment from 'moment';
 import 'moment-timezone';
 import FOOD from 'src/constants/foods';
+import { User, UserDocument } from '../users/users.schema';
 
 @Injectable()
 export class ManagerService {
   constructor(
     @InjectModel(Orders.name)
     private readonly orderModel: Model<OrdersDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
   ) {}
 
   async getChartData(date: string, range: 'week' | 'month' | 'year') {
@@ -63,7 +66,7 @@ export class ManagerService {
           $gte: startDate,
           $lte: endDate,
         },
-        isPayment: true
+        isPayment: true,
       })
       .lean();
 
@@ -167,24 +170,55 @@ export class ManagerService {
       topBeers,
     };
   }
-async invoiceListByDate(dateRaw: string | Date) {
-  const TZ = "Asia/Ho_Chi_Minh";
-  const start = moment.tz(dateRaw, TZ).startOf("day").toDate();
-  const nextDayStart = moment.tz(dateRaw, TZ).add(1, "day").startOf("day").toDate();
+  async invoiceListByDate(dateRaw: string | Date) {
+    const TZ = 'Asia/Ho_Chi_Minh';
+    const start = moment.tz(dateRaw, TZ).startOf('day').toDate();
+    const nextDayStart = moment
+      .tz(dateRaw, TZ)
+      .add(1, 'day')
+      .startOf('day')
+      .toDate();
 
-  const orders = await this.orderModel
-    .find({
-      createdAt: {
-        $gte: start,
-        $lt: nextDayStart,
-      },
-      isPayment: true,
-    })
-    .select("_id isPayment createdAt updatedAt paymentTime total")
-    .lean()
-    .populate("table", "_id name")
-    .populate("orderer", "_id fullName username")
-    .populate("cashier", "_id fullName username");
-  return orders;
-}
+    const orders = await this.orderModel
+      .find({
+        createdAt: {
+          $gte: start,
+          $lt: nextDayStart,
+        },
+        isPayment: true,
+      })
+      .select('_id isPayment createdAt updatedAt paymentTime total')
+      .lean()
+      .populate('table', '_id name')
+      .populate('orderer', '_id fullName username')
+      .populate('cashier', '_id fullName username');
+    return orders;
+  }
+  escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  async accounts(search?: string, position?: string, user?: { _id: any }) {
+    const filter: any = {};
+
+    if (search && search.trim()) {
+      const pattern = new RegExp(this.escapeRegex(search.trim()), 'i');
+      filter.$or = [
+        { fullName: pattern },
+        { username: pattern },
+        { phone: pattern },
+      ];
+    }
+
+    if (position && position !== 'all') {
+      filter.position = position;
+    }
+
+    const users = await this.userModel.find(filter).select('-password').lean();
+
+    const myId = String(user?._id || '');
+
+    return users.map((u: any) => ({
+      ...u,
+      itsMe: String(u._id) === myId,
+    }));
+  }
 }

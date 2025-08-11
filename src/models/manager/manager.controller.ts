@@ -10,6 +10,7 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { ManagerService } from './manager.service';
+import { User } from 'src/commons/decorators/user.decorator';
 
 @Controller('manager')
 export class ManagerController {
@@ -30,5 +31,11 @@ export class ManagerController {
   @Get("orders/invoicesByDate")
   async invoiceListByDate(@Query() { date }) {
     return await this.managerService.invoiceListByDate(date);
+  }
+
+  @HttpCode(200)
+  @Get('users/accounts')
+  async accounts(@Query() {position, search }, @User() user) {
+    return await this.managerService.accounts(search, position, user);
   }
 }
