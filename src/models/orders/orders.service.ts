@@ -169,6 +169,7 @@ export class OrdersService {
       
       await session.commitTransaction();
       this.pushSocketToCooking(changedFoods, table);
+      this.socketGateway.notifyTableUpdate();
       return { success: true };
     } catch (error) {
       await session.abortTransaction();

@@ -192,7 +192,12 @@ export class ManagerService {
       .populate('table', '_id name')
       .populate('orderer', '_id fullName username')
       .populate('cashier', '_id fullName username');
-    return orders;
+    return orders.map(order => {
+      return {
+        ...order,
+        total: order.total || order.foods.reduce((acc, cur) => acc + cur.total, 0)
+      }
+    });
   }
   escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
