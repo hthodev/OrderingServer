@@ -73,7 +73,7 @@ export class OrdersService {
           ].includes(food.category as any),
       );
       if (foodsForCooking?.length) {
-        this.socketGateway.newOrder({ foods: foodsForCooking, table })
+        this.socketGateway.newOrder({ foods: foodsForCooking, table });
       }
 
       return orders.map((o) => o.toJSON())[0];
@@ -91,10 +91,11 @@ export class OrdersService {
     try {
       const order = await this.ordersModel
         .findOne({ _id })
-        .select('foods')
+        .select('foods table')
         .session(session)
         .lean();
 
+      const table = await this.tableModel.findOne({ _id: order.table }).lean();
       const dbFoodsMap = new Map(order.foods.map((f) => [f._id.toString(), f]));
 
       const existingFoodIds = new Set(dbFoodsMap.keys());
@@ -161,14 +162,13 @@ export class OrdersService {
         }
       }
 
-      console.log('Foods thay đổi:', changedFoods);
-      console.log(this.pushSocketToCooking(changedFoods));
-
+      
       if (bulkOps.length > 0) {
         await this.ordersModel.bulkWrite(bulkOps, { session });
       }
-
+      
       await session.commitTransaction();
+      this.pushSocketToCooking(changedFoods, table);
       return { success: true };
     } catch (error) {
       await session.abortTransaction();
@@ -234,11 +234,18 @@ export class OrdersService {
         .select('_id table foods')
         .session(session)
         .lean();
-      const total = order.foods.reduce((acc, cur) => acc + (cur.total || 0), 0)
+      const total = order.foods.reduce((acc, cur) => acc + (cur.total || 0), 0);
       if (!order) throw new HttpException('Order not existed!', 400);
       await this.ordersModel.updateOne(
         { _id },
-        { $set: { isPayment: true, paymentTime: new Date(), total, cashier: user._id } },
+        {
+          $set: {
+            isPayment: true,
+            paymentTime: new Date(),
+            total,
+            cashier: user._id,
+          },
+        },
         { session },
       );
 
@@ -257,14 +264,16 @@ export class OrdersService {
     }
   }
 
-  pushSocketToCooking(foods: any[]) {
+  pushSocketToCooking(foods: any[], table: any) {
     const justPushIsFoods = foods.filter(
       (food) =>
         !['Bia', 'Thực phẩm thêm', 'Nước', 'Bánh tráng'].includes(
           food.category,
         ),
     );
-    return justPushIsFoods;
+    if (justPushIsFoods?.length) {
+      this.socketGateway.newOrder({ foods: justPushIsFoods, table });
+    }
   }
 
   async updateCookedFood(food_id, order_id) {
