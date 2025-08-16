@@ -187,12 +187,19 @@ export class ManagerService {
         },
         isPayment: true,
       })
-      .select('_id isPayment createdAt updatedAt paymentTime total')
+      .select('_id isPayment createdAt updatedAt paymentTime total foods')
       .lean()
       .populate('table', '_id name')
       .populate('orderer', '_id fullName username')
       .populate('cashier', '_id fullName username');
-    return orders;
+    return orders.map(order => {
+      const total = order.foods.reduce((acc, cur) => acc + cur.total, 0);
+      delete order.foods;
+      return {
+        ...order,
+        total: order.total || total,
+      }
+    });
   }
   escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
