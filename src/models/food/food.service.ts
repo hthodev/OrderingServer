@@ -72,7 +72,7 @@ export class FoodService {
       },
     );
 
-    return { success: true }
+    return { success: true };
   }
 
   async deleteFood(_id: string) {
@@ -82,6 +82,6 @@ export class FoodService {
       throw new HttpException('Food not existed!', 400);
     }
     await this.foodModel.deleteOne({ _id });
-    return { success: true }
+    return { success: true };
   }
 }

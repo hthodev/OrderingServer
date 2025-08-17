@@ -16,33 +16,38 @@ export class ManagerService {
     private readonly userModel: Model<UserDocument>,
   ) {}
 
-  async getChartData(date: string, range: 'week' | 'month' | 'year') {
-    const now = moment(date);
-    let startDate: Date;
-    let endDate: Date;
+  async getChartData(dateRaw: string, range: 'week' | 'month' | 'year') {
+    const TZ = 'UTC';
+    const now = moment
+      .tz(
+        dateRaw,
+        [moment.ISO_8601, 'YYYY-MM-DD', 'YYYY/MM/DD', 'DD/MM/YYYY'],
+        TZ,
+      )
+      .startOf('day');
+
+    if (!now.isValid()) throw new Error('Invalid dateRaw');
+
+    let start = now.clone();
+    let end = now.clone();
     let labels: string[] = [];
-    let getKey: (date: moment.Moment) => number;
+    let getKey: (d: moment.Moment) => number;
 
     if (range === 'week') {
-      startDate = now.clone().startOf('isoWeek').toDate(); // Monday
-      endDate = now.clone().endOf('isoWeek').toDate();
+      start = start.startOf('isoWeek');
+      end = end.endOf('isoWeek');
       labels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-      getKey = (date) => parseInt(date.format('E')); // 1 (T2) to 7 (CN)
-    }
-
-    if (range === 'month') {
-      startDate = now.clone().startOf('month').toDate();
-      endDate = now.clone().endOf('month').toDate();
-      labels = ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4', 'Tuần 5'];
-      getKey = (date) => {
-        const day = date.date(); // 1-31
-        return Math.ceil(day / 7); // 1-5
-      };
-    }
-
-    if (range === 'year') {
-      startDate = now.clone().startOf('year').toDate();
-      endDate = now.clone().endOf('year').toDate();
+      getKey = (d) => parseInt(d.tz(TZ).format('E'), 10); // 1..7
+    } else if (range === 'month') {
+      start = start.startOf('month');
+      end = end.endOf('month');
+      const weeksInMonth = Math.ceil(now.daysInMonth() / 7);
+      labels = Array.from({ length: weeksInMonth }, (_, i) => `Tuần ${i + 1}`);
+      getKey = (d) => Math.ceil(d.tz(TZ).date() / 7); // 1..5
+    } else {
+      // year
+      start = start.startOf('year');
+      end = end.endOf('year');
       labels = [
         'Th1',
         'Th2',
@@ -57,42 +62,34 @@ export class ManagerService {
         'Th11',
         'Th12',
       ];
-      getKey = (date) => parseInt(date.format('M')); // 1-12
+      getKey = (d) => parseInt(d.tz(TZ).format('M'), 10); // 1..12
     }
 
     const orders = await this.orderModel
       .find({
-        createdAt: {
-          $gte: startDate,
-          $lte: endDate,
-        },
+        createdAt: { $gte: start.toDate(), $lte: end.toDate() },
         isPayment: true,
       })
       .lean();
 
-    const grouped: { [key: number]: number } = {};
+    const grouped: Record<number, number> = {};
 
     for (const order of orders) {
-      const date = moment((order as any).createdAt);
-      const key = getKey(date);
-      const amount = order.foods.reduce((sum, food) => {
-        return sum + (food.total ?? food.price * food.quantity);
-      }, 0);
+      const d = moment.tz((order as any).createdAt, TZ);
+      const key = getKey(d);
+      const amount = order.foods.reduce(
+        (sum, f) => sum + (f.total ?? f.price * f.quantity),
+        0,
+      );
       grouped[key] = (grouped[key] || 0) + amount;
     }
 
-    const chartData = labels.map((label, index) => {
-      const key = index + 1;
-      return {
-        label,
-        total: (grouped[key] || 0) / 1000, // đơn vị nghìn
-      };
+    const chartData = labels.map((label, idx) => {
+      const key = idx + 1;
+      return { label, total: (grouped[key] || 0) / 1000 }; // nghìn
     });
 
-    return {
-      range,
-      chartData,
-    };
+    return { range, chartData };
   }
 
   async topFoods(date, range: 'week' | 'month' | 'year') {
@@ -170,11 +167,21 @@ export class ManagerService {
       topBeers,
     };
   }
-  async invoiceListByDate(dateRaw: string | Date) {
-    const TZ = 'Asia/Ho_Chi_Minh';
-    const start = moment.tz(dateRaw, TZ).startOf('day').toDate();
+  async invoiceListByDate(dateRaw: string) {
+    const TZ = 'UTC';
+    const start = moment
+      .tz(
+        dateRaw,
+        [moment.ISO_8601, 'YYYY-MM-DD', 'YYYY/MM/DD', 'DD/MM/YYYY'],
+        TZ,
+      )
+      .startOf('day');
     const nextDayStart = moment
-      .tz(dateRaw, TZ)
+      .tz(
+        dateRaw,
+        [moment.ISO_8601, 'YYYY-MM-DD', 'YYYY/MM/DD', 'DD/MM/YYYY'],
+        TZ,
+      )
       .add(1, 'day')
       .startOf('day')
       .toDate();
@@ -192,13 +199,14 @@ export class ManagerService {
       .populate('table', '_id name')
       .populate('orderer', '_id fullName username')
       .populate('cashier', '_id fullName username');
-    return orders.map(order => {
+
+    return orders.map((order) => {
       const total = order.foods.reduce((acc, cur) => acc + cur.total, 0);
       delete order.foods;
       return {
         ...order,
         total: order.total || total,
-      }
+      };
     });
   }
   escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

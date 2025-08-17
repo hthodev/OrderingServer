@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Put, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Query, Req } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { User } from 'src/commons/decorators/user.decorator';
 
@@ -40,5 +40,11 @@ export class OrdersController {
   @Put('cooked/orders/:order_id/foods/:food_id')
   async updateCookedFood(@Param() { order_id, food_id }) {
     return await this.ordersService.updateCookedFood(food_id, order_id)
+  }
+
+  @HttpCode(200)
+  @Get('totalWithout')
+  async totalWithout(@Query('date') date) {
+    return await this.ordersService.totalWithout(date);
   }
 }

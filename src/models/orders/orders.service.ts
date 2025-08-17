@@ -8,6 +8,8 @@ import { Table, TableDocument } from '../tables/tables.schema';
 import { SocketGateway } from 'src/websockets/socket.gateway';
 import FOOD from 'src/constants/foods';
 import { exceptionCategory } from 'src/commons/shares';
+import * as moment from 'moment';
+import 'moment-timezone';
 
 @Injectable()
 export class OrdersService {
@@ -162,11 +164,10 @@ export class OrdersService {
         }
       }
 
-      
       if (bulkOps.length > 0) {
         await this.ordersModel.bulkWrite(bulkOps, { session });
       }
-      
+
       await session.commitTransaction();
       this.pushSocketToCooking(changedFoods, table);
       this.socketGateway.notifyTableUpdate();
@@ -313,5 +314,73 @@ export class OrdersService {
       await session.abortTransaction();
       return { success: false, message: error.message };
     }
+  }
+
+  async totalWithout(dateRaw) {
+    const TZ = 'UTC';
+    const date = moment
+      .tz(
+        dateRaw,
+        [moment.ISO_8601, 'YYYY-MM-DD', 'YYYY/MM/DD', 'DD/MM/YYYY'],
+        TZ,
+      )
+      .startOf('day')
+      .toDate();
+    const nextDayStart = moment
+      .tz(
+        dateRaw,
+        [moment.ISO_8601, 'YYYY-MM-DD', 'YYYY/MM/DD', 'DD/MM/YYYY'],
+        TZ,
+      )
+      .add(1, 'day')
+      .startOf('day')
+      .toDate();
+    const food = await this.ordersModel.aggregate([
+      { $unwind: '$foods' },
+      {
+        $match: {
+          'foods.category': { $nin: ['Bia', 'Rượu', 'Nước'] },
+          createdAt: {
+            $gte: date,
+            $lt: nextDayStart,
+          },
+          isPayment: true,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: '$foods.total' },
+        },
+      },
+    ]);
+
+    const c = await this.ordersModel.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: date,
+            $lt: nextDayStart,
+          },
+        },
+      },
+      { $unwind: '$foods' },
+      {
+        $match: {
+          'foods.category': { $in: ['Bia', 'Rượu', 'Nước'] },
+          isPayment: true,
+        },
+      },
+      {
+        $group: {
+          _id: '$foods.category',
+          total: { $sum: { $toDouble: '$foods.total' } },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    console.log('Check', food);
+    console.log('Checkccc', c);
   }
 }
