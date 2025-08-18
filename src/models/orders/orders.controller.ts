@@ -47,4 +47,10 @@ export class OrdersController {
   async totalWithout(@Query('date') date) {
     return await this.ordersService.totalWithout(date);
   }
+
+  @HttpCode(200)
+  @Put('updateFoodPrices/:_id')
+  async updateFoodPrices(@Body() { foods }, @Param('_id') _id, @User() user) {
+    return await this.ordersService.updateFoodPrices(_id, { foods }, user)
+  }
 }
