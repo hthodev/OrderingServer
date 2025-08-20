@@ -79,7 +79,7 @@ export class ManagerService {
       const d = moment.tz((order as any).createdAt, TZ);
       const key = getKey(d);
       const amount = order.foods.reduce(
-        (sum, f) => sum + (f.total ?? f.price * f.quantity),
+        (sum, f) => sum + (f.total || f.price * f.quantity),
         0,
       );
       grouped[key] = (grouped[key] || 0) + amount;
@@ -194,7 +194,8 @@ export class ManagerService {
           $lt: nextDayStart,
         },
         isPayment: true,
-      }).sort({ paymentTime: -1 })
+      })
+      .sort({ paymentTime: -1 })
       .select('_id isPayment createdAt updatedAt paymentTime total foods')
       .lean()
       .populate('table', '_id name')
@@ -210,7 +211,7 @@ export class ManagerService {
       };
     });
   }
-  
+
   async accounts(search?: string, position?: string, user?: { _id: any }) {
     const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const filter: any = {};
@@ -240,14 +241,13 @@ export class ManagerService {
 
   async reportByCategory(dateRaw) {
     const TZ = 'UTC';
-    const date = moment
+    const start = moment
       .tz(
         dateRaw,
         [moment.ISO_8601, 'YYYY-MM-DD', 'YYYY/MM/DD', 'DD/MM/YYYY'],
         TZ,
       )
-      .startOf('day')
-      .toDate();
+      .startOf('day');
     const nextDayStart = moment
       .tz(
         dateRaw,
@@ -257,69 +257,73 @@ export class ManagerService {
       .add(1, 'day')
       .startOf('day')
       .toDate();
-    const food = await this.orderModel.aggregate([
-      { $unwind: '$foods' },
-      {
-        $match: {
-          'foods.category': { $nin: ['Bia', 'Rượu', 'Nước'] },
-          createdAt: {
-            $gte: date,
-            $lt: nextDayStart,
-          },
-          isPayment: true,
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalRevenue: { $sum: '$foods.total' },
-          totalQuantity: { $sum: '$foods.quantity' },
-        },
-      },
-    ]);
 
-    const c = await this.orderModel.aggregate([
-      {
-        $match: {
-          createdAt: {
-            $gte: date,
-            $lt: nextDayStart,
-          },
+    const orders = await this.orderModel
+      .find({
+        createdAt: {
+          $gte: start,
+          $lt: nextDayStart,
         },
-      },
-      { $unwind: '$foods' },
-      {
-        $match: {
-          'foods.category': { $in: ['Bia', 'Rượu', 'Nước'] },
-          isPayment: true,
-        },
-      },
-      {
-        $group: {
-          _id: '$foods.category',
-          totalRevenue: { $sum: '$foods.total' },
-          totalQuantity: { $sum:  '$foods.quantity' },
-        },
-      },
-      { $sort: { _id: 1 } },
-    ]);
+        isPayment: true,
+      })
+      .sort({ paymentTime: -1 })
+      .select('_id isPayment createdAt paymentTime total foods')
+      .lean();
+    const foods = [];
+    const beers = [];
+    const alcohols = [];
+    const waters = [];
+
+    for (const order of orders) {
+      order?.foods?.forEach((food) => {
+        if (
+          ![FOOD.CATEGORY.BIA, FOOD.CATEGORY.NUOC, FOOD.CATEGORY.RUOU].includes(
+            food.category as any,
+          )
+        ) {
+          foods.push({
+            total: food.total || food.price * food.quantity,
+            quantity: food.quantity,
+          });
+        }
+        if (food.category === FOOD.CATEGORY.BIA) {
+          beers.push({
+            total: food.total || food.price * food.quantity,
+            quantity: food.quantity,
+          });
+        }
+        if (food.category === FOOD.CATEGORY.RUOU) {
+          alcohols.push({
+            total: food.total || food.price * food.quantity,
+            quantity: food.quantity,
+          });
+        }
+        if (food.category === FOOD.CATEGORY.NUOC) {
+          waters.push({
+            total: food.total || food.price * food.quantity,
+            quantity: food.quantity,
+          });
+        }
+      });
+    }
+
     return {
       food: {
-        totalRevenue: food[0]?.totalRevenue || 0,
-        totalQuantity: food[0]?.totalQuantity || 0 
+        totalRevenue: foods.reduce((acc, cur) => acc + cur.total, 0),
+        totalQuantity: foods.reduce((acc, cur) => acc + cur.quantity, 0),
       },
       beer: {
-        totalRevenue: c[0]?.totalRevenue || 0,
-        totalQuantity: c[0]?.totalQuantity || 0 
+        totalRevenue: beers.reduce((acc, cur) => acc + cur.total, 0),
+        totalQuantity: beers.reduce((acc, cur) => acc + cur.quantity, 0),
       },
       water: {
-        totalRevenue: c[1]?.totalRevenue || 0,
-        totalQuantity: c[1]?.totalQuantity || 0 
+        totalRevenue: waters.reduce((acc, cur) => acc + cur.total, 0),
+        totalQuantity: waters.reduce((acc, cur) => acc + cur.quantity, 0),
       },
-      alcohol:{
-        totalRevenue: c[2]?.totalRevenue || 0,
-        totalQuantity: c[2]?.totalQuantity || 0 
-      }
-    }
+      alcohol: {
+        totalRevenue: alcohols.reduce((acc, cur) => acc + cur.total, 0),
+        totalQuantity: alcohols.reduce((acc, cur) => acc + cur.quantity, 0),
+      },
+    };
   }
 }

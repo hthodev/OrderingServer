@@ -16,7 +16,7 @@ export default class FOOD {
     THUC_PHAM_THEM: "Thực phẩm thêm",
     NUOC: "Nước",
     BANH_TRANG: "Bánh tráng",
-    RƯỢU: "Rượu"
+    RUOU: "Rượu"
   } as const;
 }
 

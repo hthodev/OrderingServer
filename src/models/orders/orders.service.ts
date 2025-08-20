@@ -236,8 +236,8 @@ export class OrdersService {
         .select('_id table foods')
         .session(session)
         .lean();
-      const total = order.foods.reduce((acc, cur) => acc + (cur.total || 0), 0);
-      if (!order) throw new HttpException('Order not existed!', 400);
+        if (!order) throw new HttpException('Order not existed!', 400);
+      const total = order?.foods?.reduce((acc, cur) => acc + (cur.total || 0), 0);
       await this.ordersModel.updateOne(
         { _id },
         {
