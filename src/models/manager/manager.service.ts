@@ -200,6 +200,7 @@ export class ManagerService {
       .populate('table', '_id name')
       .populate('orderer', '_id fullName username')
       .populate('cashier', '_id fullName username');
+
     return orders.map((order) => {
       const total = order.foods.reduce((acc, cur) => acc + cur.total, 0);
       delete order.foods;
