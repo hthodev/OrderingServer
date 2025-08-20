@@ -70,6 +70,7 @@ export class ManagerService {
         createdAt: { $gte: start.toDate(), $lte: end.toDate() },
         isPayment: true,
       })
+      .sort({ paymentTime: -1 })
       .lean();
 
     const grouped: Record<number, number> = {};
@@ -193,7 +194,7 @@ export class ManagerService {
           $lt: nextDayStart,
         },
         isPayment: true,
-      })
+      }).sort({ paymentTime: -1 })
       .select('_id isPayment createdAt updatedAt paymentTime total foods')
       .lean()
       .populate('table', '_id name')
@@ -208,13 +209,13 @@ export class ManagerService {
       };
     });
   }
-  escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
+  
   async accounts(search?: string, position?: string, user?: { _id: any }) {
+    const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const filter: any = {};
 
     if (search && search.trim()) {
-      const pattern = new RegExp(this.escapeRegex(search.trim()), 'i');
+      const pattern = new RegExp(escapeRegex(search.trim()), 'i');
       filter.$or = [
         { fullName: pattern },
         { username: pattern },
@@ -234,5 +235,90 @@ export class ManagerService {
       ...u,
       itsMe: String(u._id) === myId,
     }));
+  }
+
+  async reportByCategory(dateRaw) {
+    const TZ = 'UTC';
+    const date = moment
+      .tz(
+        dateRaw,
+        [moment.ISO_8601, 'YYYY-MM-DD', 'YYYY/MM/DD', 'DD/MM/YYYY'],
+        TZ,
+      )
+      .startOf('day')
+      .toDate();
+    const nextDayStart = moment
+      .tz(
+        dateRaw,
+        [moment.ISO_8601, 'YYYY-MM-DD', 'YYYY/MM/DD', 'DD/MM/YYYY'],
+        TZ,
+      )
+      .add(1, 'day')
+      .startOf('day')
+      .toDate();
+    const food = await this.orderModel.aggregate([
+      { $unwind: '$foods' },
+      {
+        $match: {
+          'foods.category': { $nin: ['Bia', 'Rượu', 'Nước'] },
+          createdAt: {
+            $gte: date,
+            $lt: nextDayStart,
+          },
+          isPayment: true,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: '$foods.total' },
+          totalQuantity: { $sum: '$foods.quantity' },
+        },
+      },
+    ]);
+
+    const c = await this.orderModel.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: date,
+            $lt: nextDayStart,
+          },
+        },
+      },
+      { $unwind: '$foods' },
+      {
+        $match: {
+          'foods.category': { $in: ['Bia', 'Rượu', 'Nước'] },
+          isPayment: true,
+        },
+      },
+      {
+        $group: {
+          _id: '$foods.category',
+          totalRevenue: { $sum: '$foods.total' },
+          totalQuantity: { $sum:  '$foods.quantity' },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+    return {
+      food: {
+        totalRevenue: food[0]?.totalRevenue || 0,
+        totalQuantity: food[0]?.totalQuantity || 0 
+      },
+      beer: {
+        totalRevenue: c[0]?.totalRevenue || 0,
+        totalQuantity: c[0]?.totalQuantity || 0 
+      },
+      water: {
+        totalRevenue: c[1]?.totalRevenue || 0,
+        totalQuantity: c[1]?.totalQuantity || 0 
+      },
+      alcohol:{
+        totalRevenue: c[2]?.totalRevenue || 0,
+        totalQuantity: c[2]?.totalQuantity || 0 
+      }
+    }
   }
 }

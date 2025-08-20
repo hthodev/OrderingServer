@@ -38,4 +38,10 @@ export class ManagerController {
   async accounts(@Query() {position, search }, @User() user) {
     return await this.managerService.accounts(search, position, user);
   }
+
+  @HttpCode(200)
+  @Get('reportByCategory')
+  async totalWithout(@Query('date') date) {
+    return await this.managerService.reportByCategory(date);
+  }
 }

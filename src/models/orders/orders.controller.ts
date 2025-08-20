@@ -41,10 +41,4 @@ export class OrdersController {
   async updateCookedFood(@Param() { order_id, food_id }) {
     return await this.ordersService.updateCookedFood(food_id, order_id)
   }
-
-  @HttpCode(200)
-  @Get('totalWithout')
-  async totalWithout(@Query('date') date) {
-    return await this.ordersService.totalWithout(date);
-  }
 }
