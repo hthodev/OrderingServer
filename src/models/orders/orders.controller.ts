@@ -1,4 +1,14 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Put, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+} from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { User } from 'src/commons/decorators/user.decorator';
 
@@ -15,13 +25,13 @@ export class OrdersController {
   @HttpCode(200)
   @Put('orderMore/:_id')
   async orderMore(@Body() { foods }, @Param('_id') _id, @User() user) {
-    return await this.ordersService.orderMore(_id, { foods }, user)
+    return await this.ordersService.orderMore(_id, { foods }, user);
   }
 
   @HttpCode(200)
   @Get('order/:_id')
   async order(@Param('_id') _id) {
-    return await this.ordersService.order(_id)
+    return await this.ordersService.order(_id);
   }
 
   @HttpCode(200)
@@ -33,12 +43,18 @@ export class OrdersController {
   @HttpCode(200)
   @Put('paid/:_id')
   async customerPaid(@Param('_id') _id, @User() user) {
-    return await this.ordersService.customerPaid(_id, user)
+    return await this.ordersService.customerPaid(_id, user);
   }
 
   @HttpCode(200)
   @Put('cooked/orders/:order_id/foods/:food_id')
   async updateCookedFood(@Param() { order_id, food_id }) {
-    return await this.ordersService.updateCookedFood(food_id, order_id)
+    return await this.ordersService.updateCookedFood(food_id, order_id);
+  }
+
+  @HttpCode(200)
+  @Put('updateFoodPrices/:_id')
+  async updateFoodPrices(@Body() { foods }, @Param('_id') _id, @User() user) {
+    return await this.ordersService.updateFoodPrices(_id, { foods }, user);
   }
 }

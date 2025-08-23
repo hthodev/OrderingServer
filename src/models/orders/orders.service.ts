@@ -236,8 +236,11 @@ export class OrdersService {
         .select('_id table foods')
         .session(session)
         .lean();
-        if (!order) throw new HttpException('Order not existed!', 400);
-      const total = order?.foods?.reduce((acc, cur) => acc + (cur.total || 0), 0);
+      if (!order) throw new HttpException('Order not existed!', 400);
+      const total = order?.foods?.reduce(
+        (acc, cur) => acc + (cur.total || 0),
+        0,
+      );
       await this.ordersModel.updateOne(
         { _id },
         {
@@ -313,6 +316,95 @@ export class OrdersService {
     } catch (error) {
       await session.abortTransaction();
       return { success: false, message: error.message };
+    }
+  }
+
+  async updateFoodPrices(_id: string, { foods }, user) {
+    const session: ClientSession = await this.ordersModel.db.startSession();
+    session.startTransaction();
+
+    try {
+      const order = await this.ordersModel
+        .findOne({ _id })
+        .select('foods table')
+        .session(session)
+        .lean();
+
+      if (!order) {
+        throw new HttpException('Order not found', 400);
+      }
+      const dbFoodsMap = new Map(order.foods.map((f) => [String(f._id), f]));
+
+      const bulkOps: any[] = [];
+      const changedFoods: Array<{
+        _id: string;
+        name: string;
+        category?: string;
+        oldPrice: number;
+        newPrice: number;
+      }> = [];
+
+      for (const food of foods ?? []) {
+        const foodId = String(food?._id || '');
+        if (!foodId) continue;
+
+        const dbFood = dbFoodsMap.get(foodId);
+        if (!dbFood) {
+          continue;
+        }
+
+        const newPrice = Number(food.price);
+        if (!Number.isFinite(newPrice) || newPrice < 0) {
+          continue;
+        }
+
+        const oldPrice = Number(dbFood.price);
+        if (oldPrice === newPrice) {
+          continue;
+        }
+
+        changedFoods.push({
+          _id: foodId,
+          name: dbFood.name,
+          category: dbFood.category,
+          oldPrice,
+          newPrice,
+        });
+
+        bulkOps.push({
+          updateOne: {
+            filter: {
+              _id,
+              'foods._id': foodId,
+            },
+            update: {
+              $set: {
+                'foods.$.price': newPrice,
+              },
+            },
+            session,
+          },
+        });
+      }
+
+      if (bulkOps.length > 0) {
+        await this.ordersModel.bulkWrite(bulkOps, { session });
+      }
+
+      await session.commitTransaction();
+      session.endSession();
+
+      this.socketGateway.notifyTableUpdate();
+
+      return {
+        success: true,
+        updated: changedFoods.length,
+        changedFoods,
+      };
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw new HttpException('Server internal', 500);
     }
   }
 }
