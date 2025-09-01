@@ -34,7 +34,7 @@ export class TableService {
 
     const orders = await this.orderModel.aggregate([
       { $match: { table: { $in: activeTableIds } } },
-      { $sort: { updatedAt: -1 } },
+      { $sort: { createdAt: -1 } },
       {
         $group: {
           _id: '$table',
@@ -61,7 +61,7 @@ export class TableService {
     if (table.havingGuests) {
       const orders = await this.orderModel
         .find({ table: table._id })
-        .sort({ updatedAt: -1 })
+        .sort({ createdAt: -1 })
         .limit(1)
         .lean();
 
@@ -130,7 +130,7 @@ export class TableService {
     const orders = (
       await this.orderModel.aggregate([
         { $match: { table: { $in: activeTableIds } } },
-        { $sort: { updatedAt: -1 } },
+        { $sort: { createdAt: -1 } },
         {
           $group: {
             _id: '$table',
