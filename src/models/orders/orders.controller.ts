@@ -57,4 +57,10 @@ export class OrdersController {
   async updateFoodPrices(@Body() { foods }, @Param('_id') _id, @User() user) {
     return await this.ordersService.updateFoodPrices(_id, { foods }, user);
   }
+
+  @HttpCode(200)
+  @Get('order')
+  async getOrder(@Query() { _id }) {
+    return await this.ordersService.getOrder(_id);
+  }
 }

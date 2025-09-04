@@ -260,6 +260,7 @@ export class OrdersService {
         { session },
       );
       await session.commitTransaction();
+      this.socketGateway.notifyTableUpdate();
       return { success: true };
     } catch (error) {
       await session.abortTransaction();
@@ -406,5 +407,10 @@ export class OrdersService {
       session.endSession();
       throw new HttpException('Server internal', 500);
     }
+  }
+
+  async getOrder(_id: string) {
+    const order = await this.ordersModel.findOne({ _id }).lean();
+    return order
   }
 }

@@ -22,7 +22,7 @@ export class SocketGateway {
   }
 
   notifyTableUpdate() {
-    this.server.emit('TABLE_UPDATE');
+    this.server.emit('UPDATE_TABLE');
   }
 
   newOrder(data: any) {
